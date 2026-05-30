@@ -1,4 +1,4 @@
-    #MyFinance 💰
+## MyFinance 💰
 
 MyFinance is a web-based personal finance management application designed to help users efficiently record daily income and expenses. This application is equipped with an automatic balance summary dashboard, transaction data management, and visualization of spending statistics using interactive graphs.
 
