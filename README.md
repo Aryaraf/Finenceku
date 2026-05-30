@@ -41,7 +41,7 @@ Make sure you have **Docker** and **Docker Desktop** installed on your computer 
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/username-kamu/financeku.git](https://github.com/username-kamu/financeku.git)
+git clone [https://github.com/username-kamu/financeku.git](https://github.com/Aryaraf/financeku.git)
 cd financeku
 ```
 
