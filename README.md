@@ -67,19 +67,19 @@ After the build process is complete and the container is running successfully, o
 ```text
 finance-app/
 ├── backend/
-│ ├── data/ # SQLite database storage folder (ignored by git)
+│ ├── data/ 
 │ ├── Dockerfile
 │ ├── package.json
-│ └── server.js # RESTful API Express
+│ └── server.js 
 ├── frontend/
 │ ├── src/
-│ │ ├── App.jsx # Main Dashboard & State Components
+│ │ ├── App.jsx 
 │ │ └── main.jsx
 │ ├── Dockerfile
 │ ├── package.json
 │ └── tailwind.config.js
 ├── .gitignore # Git exclusion file
-└── docker-compose.yml # Docker container orchestration configuration
+└── docker-compose.yml 
 ```
 
 ---
