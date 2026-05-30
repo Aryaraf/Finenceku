@@ -3,12 +3,12 @@ node_modules/
 dist/
 .chunks/
 
-# Database Lokal (SQLite)
+# Database 
 backend/data/*.db
 backend/data/*.sqlite
 backend/data/*.sqlite3
 
-# Environment/Rahasia
+# Environment
 .env
 .env.local
 .env.development.local
