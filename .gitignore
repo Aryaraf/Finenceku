@@ -1,0 +1,23 @@
+# Dependensi
+node_modules/
+dist/
+.chunks/
+
+# Database Lokal (SQLite)
+backend/data/*.db
+backend/data/*.sqlite
+backend/data/*.sqlite3
+
+# Environment/Rahasia
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# File Log & Sistem
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
