@@ -1,6 +1,6 @@
-## MyFinance 💰
+## Financeku 💰
 
-MyFinance is a web-based personal finance management application designed to help users efficiently record daily income and expenses. This application is equipped with an automatic balance summary dashboard, transaction data management, and visualization of spending statistics using interactive graphs.
+Financeku is a web-based personal finance management application designed to help users efficiently record daily income and expenses. This application is equipped with an automatic balance summary dashboard, transaction data management, and visualization of spending statistics using interactive graphs.
 
 This application is fully containerized using Docker, making it very easy to run in a local development environment without the need for manual database installation.
 
@@ -41,8 +41,8 @@ Make sure you have **Docker** and **Docker Desktop** installed on your computer 
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/username-kamu/financeku.git](https://github.com/Aryaraf/financeku.git)
-cd financeku
+git clone https://github.com/Aryaraf/Financeku.git
+cd Financeku
 ```
 
 ### 2. Run Using Docker Compose
