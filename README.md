@@ -78,7 +78,7 @@ finance-app/
 │ ├── Dockerfile
 │ ├── package.json
 │ └── tailwind.config.js
-├── .gitignore # Git exclusion file
+├── .gitignore 
 └── docker-compose.yml 
 ```
 
