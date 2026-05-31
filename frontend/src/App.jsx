@@ -67,7 +67,6 @@ export default function App() {
   const totalExpenseChart = expenseData.reduce((sum, item) => sum + item.value, 0);
 
   // --- Data for Cash Flow Trend Chart ---
-  // Group transactions by date
   const flowByDate = transactions.reduce((acc, curr) => {
     if (!acc[curr.date]) {
       acc[curr.date] = { date: curr.date, Pemasukan: 0, Pengeluaran: 0 };
@@ -80,11 +79,9 @@ export default function App() {
     return acc;
   }, {});
   
-  // Converts an object to an array and sorts it by oldest -> newest date
   const cashFlowData = Object.values(flowByDate).sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // --- Data for Latest Transaction Widget ---
-  // Retrieves the 5 most recently entered transactions.
   const recentTransactions = [...transactions].reverse().slice(0, 5);
 
   // --- Export to Excel function ---
@@ -166,7 +163,6 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  // Custom Tooltip for Recharts Chart
   const formatRupiahTooltip = (value) => `Rp ${value.toLocaleString('id-ID')}`;
 
   return (
@@ -246,10 +242,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* BARU: Cash Flow Trend Chart & Recent Transactions */}
+              {/* Cash Flow Trend Chart & Recent Transactions */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* Cash Flow Chart (Makan porsi 2 kolom) */}
+                {/* Cash Flow Chart */}
                 <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                   <div className="flex items-center gap-2 mb-6">
                     <Activity className="text-blue-500" size={20} />
@@ -272,7 +268,7 @@ export default function App() {
                           <YAxis 
                             stroke={darkMode ? '#9ca3af' : '#6b7280'} 
                             fontSize={12}
-                            tickFormatter={(value) => `Rp${value / 1000}k`} // Shortening thousands numbers
+                            tickFormatter={(value) => `Rp${value / 1000}k`}
                           />
                           <Tooltip 
                             formatter={formatRupiahTooltip}
@@ -306,7 +302,7 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Widget Transaksi Terbaru (Makan porsi 1 kolom) */}
+                {/* Widget Transaksi Terbaru (DIPERBAIKI) */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                   <h3 className="text-lg font-bold mb-4">Transaksi Terbaru</h3>
                   <div className="space-y-4">
@@ -315,18 +311,23 @@ export default function App() {
                     ) : (
                       recentTransactions.map(t => (
                         <div key={t.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition border border-transparent hover:border-gray-100 dark:hover:border-gray-600">
-                          <div className="flex items-center gap-3">
+                          
+                          {/* Sisi Kiri: Ikon + Info Teks */}
+                          <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                             <div className={`p-2 rounded-lg flex-shrink-0 ${t.type === 'Pemasukan' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
                               {t.type === 'Pemasukan' ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
                             </div>
-                            <div className="overflow-hidden">
-                              <p className="text-sm font-semibold truncate">{t.note || t.category}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold truncate text-gray-900 dark:text-white">{t.note || t.category}</p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">{t.date}</p>
                             </div>
                           </div>
-                          <p className={`text-sm font-bold flex-shrink-0 ml-2 ${t.type === 'Pemasukan' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          
+                          {/* Sisi Kanan: Nominal Uang */}
+                          <p className={`text-sm font-bold flex-shrink-0 ${t.type === 'Pemasukan' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                             {t.type === 'Pemasukan' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
                           </p>
+
                         </div>
                       ))
                     )}
