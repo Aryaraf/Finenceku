@@ -46,71 +46,7 @@ export default function App() {
     }
   };
 
-  // Fungsi untuk Export ke Excel secara realtime dari client-side
-  const exportToExcel = () => {
-    if (transactions.length === 0) {
-      alert('Tidak ada data transaksi untuk diexport.');
-      return;
-    }
-
-    // Membuat template HTML khusus Excel agar mendukung pembatas gridlines & warna teks
-    let html = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-      <head>
-        <style>
-          table { border-collapse: collapse; width: 100%; }
-          th { background-color: #2563EB; color: white; font-weight: bold; text-align: left; }
-          th, td { border: 1px solid #cbd5e1; padding: 8px; font-family: sans-serif; }
-          .pemasukan { color: #16a34a; }
-          .pengeluaran { color: #dc2626; }
-        </style>
-      </head>
-      <body>
-        <table>
-          <thead>
-            <tr>
-              <th>Tanggal</th>
-              <th>Jenis Transaksi</th>
-              <th>Kategori</th>
-              <th>Nominal</th>
-              <th>Catatan</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    // Looping data transaksi
-    transactions.forEach(t => {
-      const isPemasukan = t.type === 'Pemasukan';
-      html += `
-        <tr>
-          <td>${t.date}</td>
-          <td class="${isPemasukan ? 'pemasukan' : 'pengeluaran'}"><b>${t.type}</b></td>
-          <td>${t.category}</td>
-          <td>Rp ${Number(t.amount).toLocaleString('id-ID')}</td>
-          <td>${t.note || '-'}</td>
-        </tr>
-      `;
-    });
-
-    html += `
-          </tbody>
-        </table>
-      </body>
-      </html>
-    `;
-
-    // Make file blob Excel (.xls)
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Laporan_Financeku_${new Date().toISOString().split('T')[0]}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
+  // --- Data Aggregation Calculation ---
   const totalPemasukan = transactions
     .filter(t => t.type === 'Pemasukan')
     .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -127,6 +63,89 @@ export default function App() {
       .reduce((sum, t) => sum + Number(t.amount), 0);
     return { name: cat, value: total };
   }).filter(item => item.value > 0);
+
+  // Calculate the specific accumulated total for data in the statistics chart.
+  const totalExpenseChart = expenseData.reduce((sum, item) => sum + item.value, 0);
+
+  // --- Export to Excel function with additional total row ---
+  const exportToExcel = () => {
+    if (transactions.length === 0) {
+      alert('Tidak ada data transaksi untuk diexport.');
+      return;
+    }
+
+    let html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <style>
+          table { border-collapse: collapse; width: 100%; }
+          th { background-color: #2563EB; color: white; font-weight: bold; text-align: left; }
+          th, td { border: 1px solid #cbd5e1; padding: 8px; font-family: sans-serif; }
+          .pemasukan { color: #16a34a; font-weight: bold; }
+          .pengeluaran { color: #dc2626; font-weight: bold; }
+          .total-row { background-color: #f8fafc; font-weight: bold; }
+          .net-row { background-color: #eff6ff; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Jenis Transaksi</th>
+              <th>Kategori</th>
+              <th>Nominal</th>
+              <th>Catatan</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    transactions.forEach(t => {
+      const isPemasukan = t.type === 'Pemasukan';
+      html += `
+        <tr>
+          <td>${t.date}</td>
+          <td class="${isPemasukan ? 'pemasukan' : 'pengeluaran'}"><b>${t.type}</b></td>
+          <td>${t.category}</td>
+          <td>Rp ${Number(t.amount).toLocaleString('id-ID')}</td>
+          <td>${t.note || '-'}</td>
+        </tr>
+      `;
+    });
+
+    // Adding a Summary Total Row at the bottom of an Excel file
+    html += `
+            <tr class="total-row">
+              <td colspan="3" style="text-align: right;">Total Pemasukan:</td>
+              <td class="pemasukan">Rp ${totalPemasukan.toLocaleString('id-ID')}</td>
+              <td></td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="3" style="text-align: right;">Total Pengeluaran:</td>
+              <td class="pengeluaran">Rp ${totalPengeluaran.toLocaleString('id-ID')}</td>
+              <td></td>
+            </tr>
+            <tr class="net-row">
+              <td colspan="3" style="text-align: right;">Selisih Bersih (Saldo):</td>
+              <td style="color: ${totalSaldo >= 0 ? '#16a34a' : '#dc2626'};">Rp ${totalSaldo.toLocaleString('id-ID')}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Laporan_Financeku_${new Date().toISOString().split('T')[0]}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className={darkMode ? 'dark bg-gray-900 text-white min-h-screen flex' : 'bg-gray-50 text-gray-900 min-h-screen flex'}>
@@ -303,6 +322,26 @@ export default function App() {
                         ))
                       )}
                     </tbody>
+
+                    {/* BARIS TOTAL RINGKASAN DI TABEL TRANSAKSI */}
+                    {transactions.length > 0 && (
+                      <tfoot className={`border-t-2 font-semibold text-sm ${darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                        <tr>
+                          <td colSpan="3" className="py-3 px-2 text-right text-gray-400">Total Pemasukan:</td>
+                          <td className="py-3 text-green-600 dark:text-green-400" colSpan="2">+Rp {totalPemasukan.toLocaleString('id-ID')}</td>
+                        </tr>
+                        <tr>
+                          <td colSpan="3" className="py-3 px-2 text-right text-gray-400">Total Pengeluaran:</td>
+                          <td className="py-3 text-red-600 dark:text-red-400" colSpan="2">-Rp {totalPengeluaran.toLocaleString('id-ID')}</td>
+                        </tr>
+                        <tr className={`border-t ${darkMode ? 'bg-blue-950/40 text-blue-300 border-gray-700' : 'bg-blue-50 text-blue-900 border-gray-100'}`}>
+                          <td colSpan="3" className="py-3 px-2 text-right font-bold">Selisih Bersih:</td>
+                          <td className={`py-3 font-bold ${totalSaldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600'}`} colSpan="2">
+                            Rp {totalSaldo.toLocaleString('id-ID')}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
                   </table>
                 </div>
               </div>
@@ -315,25 +354,35 @@ export default function App() {
               {expenseData.length === 0 ? (
                 <p className="text-center py-12 text-gray-400">Belum ada data pengeluaran untuk dianalisis.</p>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <RechartPie>
-                    <Pie
-                      data={expenseData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={true}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={80}
-                      dataKey="value"
-                    >
-                      {expenseData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => `Rp ${value.toLocaleString('id-ID')}`} />
-                    <Legend />
-                  </RechartPie>
-                </ResponsiveContainer>
+                <>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RechartPie>
+                      <Pie
+                        data={expenseData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        outerRadius={80}
+                        dataKey="value"
+                      >
+                        {expenseData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `Rp ${value.toLocaleString('id-ID')}`} />
+                      <Legend />
+                    </RechartPie>
+                  </ResponsiveContainer>
+
+                  {/* KOTAK TOTAL AKUMULASI PENGELUARAN DI BAWAH GRAFIK */}
+                  <div className={`text-center mt-6 p-4 rounded-xl border max-w-xs mx-auto ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-100'}`}>
+                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Total Akumulasi Pengeluaran</p>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
+                      Rp {totalExpenseChart.toLocaleString('id-ID')}
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           )}
