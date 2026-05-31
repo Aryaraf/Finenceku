@@ -46,6 +46,71 @@ export default function App() {
     }
   };
 
+  // Fungsi untuk Export ke Excel secara realtime dari client-side
+  const exportToExcel = () => {
+    if (transactions.length === 0) {
+      alert('Tidak ada data transaksi untuk diexport.');
+      return;
+    }
+
+    // Membuat template HTML khusus Excel agar mendukung pembatas gridlines & warna teks
+    let html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <style>
+          table { border-collapse: collapse; width: 100%; }
+          th { background-color: #2563EB; color: white; font-weight: bold; text-align: left; }
+          th, td { border: 1px solid #cbd5e1; padding: 8px; font-family: sans-serif; }
+          .pemasukan { color: #16a34a; }
+          .pengeluaran { color: #dc2626; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Jenis Transaksi</th>
+              <th>Kategori</th>
+              <th>Nominal</th>
+              <th>Catatan</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    // Looping data transaksi
+    transactions.forEach(t => {
+      const isPemasukan = t.type === 'Pemasukan';
+      html += `
+        <tr>
+          <td>${t.date}</td>
+          <td class="${isPemasukan ? 'pemasukan' : 'pengeluaran'}"><b>${t.type}</b></td>
+          <td>${t.category}</td>
+          <td>Rp ${Number(t.amount).toLocaleString('id-ID')}</td>
+          <td>${t.note || '-'}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    // Make file blob Excel (.xls)
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Laporan_Financeku_${new Date().toISOString().split('T')[0]}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const totalPemasukan = transactions
     .filter(t => t.type === 'Pemasukan')
     .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -91,7 +156,10 @@ export default function App() {
           </nav>
         </div>
         <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+          <button 
+            onClick={exportToExcel}
+            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
             <Download size={16} /> Export Excel
           </button>
           <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
