@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { LayoutDashboard, Receipt, PieChart, Download, Database, Sun, Moon, Plus } from 'lucide-react';
-import { PieChart as RechartPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { LayoutDashboard, Receipt, PieChart, Download, Database, Sun, Moon, Plus, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
+import { PieChart as RechartPie, Pie, Cell, ResponsiveContainer, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const API_URL = 'http://localhost:3000/api';
 const CATEGORIES = ['Makan', 'Transport', 'Belanja', 'Tagihan', 'Hiburan', 'Gaji', 'Bonus', 'Lainnya'];
@@ -64,10 +64,30 @@ export default function App() {
     return { name: cat, value: total };
   }).filter(item => item.value > 0);
 
-  // Calculate the specific accumulated total for data in the statistics chart.
   const totalExpenseChart = expenseData.reduce((sum, item) => sum + item.value, 0);
 
-  // --- Export to Excel function with additional total row ---
+  // --- Data for Cash Flow Trend Chart ---
+  // Group transactions by date
+  const flowByDate = transactions.reduce((acc, curr) => {
+    if (!acc[curr.date]) {
+      acc[curr.date] = { date: curr.date, Pemasukan: 0, Pengeluaran: 0 };
+    }
+    if (curr.type === 'Pemasukan') {
+      acc[curr.date].Pemasukan += Number(curr.amount);
+    } else {
+      acc[curr.date].Pengeluaran += Number(curr.amount);
+    }
+    return acc;
+  }, {});
+  
+  // Converts an object to an array and sorts it by oldest -> newest date
+  const cashFlowData = Object.values(flowByDate).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // --- Data for Latest Transaction Widget ---
+  // Retrieves the 5 most recently entered transactions.
+  const recentTransactions = [...transactions].reverse().slice(0, 5);
+
+  // --- Export to Excel function ---
   const exportToExcel = () => {
     if (transactions.length === 0) {
       alert('Tidak ada data transaksi untuk diexport.');
@@ -114,7 +134,6 @@ export default function App() {
       `;
     });
 
-    // Adding a Summary Total Row at the bottom of an Excel file
     html += `
             <tr class="total-row">
               <td colspan="3" style="text-align: right;">Total Pemasukan:</td>
@@ -146,6 +165,9 @@ export default function App() {
     link.click();
     document.body.removeChild(link);
   };
+
+  // Custom Tooltip for Recharts Chart
+  const formatRupiahTooltip = (value) => `Rp ${value.toLocaleString('id-ID')}`;
 
   return (
     <div className={darkMode ? 'dark bg-gray-900 text-white min-h-screen flex' : 'bg-gray-50 text-gray-900 min-h-screen flex'}>
@@ -188,9 +210,9 @@ export default function App() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-8">
+        <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-8 flex-shrink-0">
           <h2 className="text-xl font-semibold capitalize">{activeTab}</h2>
           <button
             onClick={() => setDarkMode(!darkMode)}
@@ -203,22 +225,122 @@ export default function App() {
         {/* Content Body */}
         <main className="p-8 flex-1 overflow-y-auto">
           {activeTab === 'dashboard' && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Saldo</p>
-                <p className="text-2xl font-bold mt-2">Rp {totalSaldo.toLocaleString('id-ID')}</p>
+            <div className="space-y-6">
+              {/* 4 Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Saldo</p>
+                  <p className={`text-2xl font-bold mt-2 ${totalSaldo < 0 ? 'text-red-600' : ''}`}>Rp {totalSaldo.toLocaleString('id-ID')}</p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Pemasukan</p>
+                  <p className="text-2xl font-bold text-green-600 mt-2">Rp {totalPemasukan.toLocaleString('id-ID')}</p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Pengeluaran</p>
+                  <p className="text-2xl font-bold text-red-600 mt-2">Rp {totalPengeluaran.toLocaleString('id-ID')}</p>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Transaksi</p>
+                  <p className="text-2xl font-bold text-blue-600 mt-2">{transactions.length}</p>
+                </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Pemasukan (Bulan Ini)</p>
-                <p className="text-2xl font-bold text-green-600 mt-2">Rp {totalPemasukan.toLocaleString('id-ID')}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Pengeluaran (Bulan Ini)</p>
-                <p className="text-2xl font-bold text-red-600 mt-2">Rp {totalPengeluaran.toLocaleString('id-ID')}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Transaksi (Bulan Ini)</p>
-                <p className="text-2xl font-bold text-blue-600 mt-2">{transactions.length}</p>
+
+              {/* BARU: Cash Flow Trend Chart & Recent Transactions */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Cash Flow Chart (Makan porsi 2 kolom) */}
+                <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Activity className="text-blue-500" size={20} />
+                    <h3 className="text-lg font-bold">Tren Arus Kas (Per Tanggal)</h3>
+                  </div>
+                  
+                  {cashFlowData.length === 0 ? (
+                    <div className="h-64 flex items-center justify-center text-gray-400">Belum ada data transaksi</div>
+                  ) : (
+                    <div className="h-72 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={cashFlowData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} vertical={false} />
+                          <XAxis 
+                            dataKey="date" 
+                            stroke={darkMode ? '#9ca3af' : '#6b7280'} 
+                            fontSize={12} 
+                            tickMargin={10} 
+                          />
+                          <YAxis 
+                            stroke={darkMode ? '#9ca3af' : '#6b7280'} 
+                            fontSize={12}
+                            tickFormatter={(value) => `Rp${value / 1000}k`} // Shortening thousands numbers
+                          />
+                          <Tooltip 
+                            formatter={formatRupiahTooltip}
+                            contentStyle={{ 
+                              backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                              borderColor: darkMode ? '#374151' : '#e5e7eb',
+                              color: darkMode ? '#ffffff' : '#000000',
+                              borderRadius: '8px'
+                            }}
+                          />
+                          <Legend wrapperStyle={{ paddingTop: '20px' }}/>
+                          <Line 
+                            type="monotone" 
+                            name="Pemasukan"
+                            dataKey="Pemasukan" 
+                            stroke="#10B981" 
+                            strokeWidth={3}
+                            activeDot={{ r: 6 }} 
+                          />
+                          <Line 
+                            type="monotone" 
+                            name="Pengeluaran"
+                            dataKey="Pengeluaran" 
+                            stroke="#EF4444" 
+                            strokeWidth={3}
+                            activeDot={{ r: 6 }} 
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+
+                {/* Widget Transaksi Terbaru (Makan porsi 1 kolom) */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                  <h3 className="text-lg font-bold mb-4">Transaksi Terbaru</h3>
+                  <div className="space-y-4">
+                    {recentTransactions.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">Belum ada aktivitas.</p>
+                    ) : (
+                      recentTransactions.map(t => (
+                        <div key={t.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition border border-transparent hover:border-gray-100 dark:hover:border-gray-600">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg flex-shrink-0 ${t.type === 'Pemasukan' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                              {t.type === 'Pemasukan' ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
+                            </div>
+                            <div className="overflow-hidden">
+                              <p className="text-sm font-semibold truncate">{t.note || t.category}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{t.date}</p>
+                            </div>
+                          </div>
+                          <p className={`text-sm font-bold flex-shrink-0 ml-2 ${t.type === 'Pemasukan' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {t.type === 'Pemasukan' ? '+' : '-'}Rp {Number(t.amount).toLocaleString('id-ID')}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {transactions.length > 5 && (
+                    <button 
+                      onClick={() => setActiveTab('transaksi')}
+                      className="w-full mt-4 py-2 text-sm text-blue-600 dark:text-blue-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
+                    >
+                      Lihat Semua
+                    </button>
+                  )}
+                </div>
+
               </div>
             </div>
           )}
@@ -236,7 +358,7 @@ export default function App() {
                       required
                       value={form.date}
                       onChange={(e) => setForm({ ...form, date: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600"
+                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                   <div>
@@ -244,7 +366,7 @@ export default function App() {
                     <select
                       value={form.type}
                       onChange={(e) => setForm({ ...form, type: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600"
+                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     >
                       <option value="Pemasukan">Pemasukan</option>
                       <option value="Pengeluaran">Pengeluaran</option>
@@ -255,7 +377,7 @@ export default function App() {
                     <select
                       value={form.category}
                       onChange={(e) => setForm({ ...form, category: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600"
+                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     >
                       {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
@@ -268,7 +390,7 @@ export default function App() {
                       placeholder="0"
                       value={form.amount}
                       onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600"
+                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                   <div>
@@ -277,7 +399,7 @@ export default function App() {
                       type="text"
                       value={form.note}
                       onChange={(e) => setForm({ ...form, note: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600"
+                      className="w-full px-3 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                   <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition flex items-center justify-center gap-2">
@@ -306,7 +428,7 @@ export default function App() {
                         </tr>
                       ) : (
                         transactions.map((t) => (
-                          <tr key={t.id} className="text-sm">
+                          <tr key={t.id} className="text-sm hover:bg-gray-50 dark:hover:bg-gray-700/30">
                             <td className="py-3">{t.date}</td>
                             <td className="py-3">
                               <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-md">{t.category}</span>
@@ -323,7 +445,6 @@ export default function App() {
                       )}
                     </tbody>
 
-                    {/* BARIS TOTAL RINGKASAN DI TABEL TRANSAKSI */}
                     {transactions.length > 0 && (
                       <tfoot className={`border-t-2 font-semibold text-sm ${darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                         <tr>
@@ -375,7 +496,6 @@ export default function App() {
                     </RechartPie>
                   </ResponsiveContainer>
 
-                  {/* KOTAK TOTAL AKUMULASI PENGELUARAN DI BAWAH GRAFIK */}
                   <div className={`text-center mt-6 p-4 rounded-xl border max-w-xs mx-auto ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-100'}`}>
                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Total Akumulasi Pengeluaran</p>
                     <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
